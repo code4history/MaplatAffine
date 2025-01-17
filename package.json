@@ -67,6 +67,7 @@
     "jest-matcher-deep-close-to": "^3.0.2",
     "jsdom": "^25.0.1",
     "prettier": "^3.4.2",
+    "proj4-list": "^1.0.2",
     "typescript": "^5.7.2",
     "vite": "^6.0.7",
     "vite-plugin-dts": "^4.4.0",

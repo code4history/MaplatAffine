@@ -3,39 +3,47 @@ import { AffineParams } from "@/interface";
 import { Position } from "geojson";
 import { forwardAffine, inverseAffine } from "../src/transform";
 import { computeTransformParams } from '../src/compute';
+import fs from "node:fs";
+import { findBestCRS } from "@/find_best";
 
-const paramsSet:{[key: string]: [number, number, AffineParams]} = {
-  "GSI generated sample": [
-    536, 438, [305.7481131407036, 0, 15279456.206093594, 0, -305.7481131407036, 4451081.031102385]
-  ]
-};
+type TestData = {
+  name:string,
+  crs:string,
+  crs_candidates:string[],
+  wh: Position,
+  params: AffineParams,
+  gcps: { image:Position, map:Position, lnglat:Position }[]
+}
+
+const testData: TestData[] = [];
+fs.readdirSync("tests/data").forEach(file => {
+  if (file.endsWith(".json")) {
+    testData.push(JSON.parse(fs.readFileSync(`tests/data/${file}`, "utf-8")) as TestData);
+  }
+});
 
 describe("Bidirectional affine transform ", () => {
-  for (const key in paramsSet) {
-    const [W, H, params] = paramsSet[key];
-    
-    describe(key, () => {
-      const imagePoints: Position[] = [];
-      const mapPoints: Position[] = [];
+  testData.forEach((data) => {
+    describe(data.name, () => {
+      const params = data.params;
 
-      it("forward and inverse", () => {  
-        for (let i = 0; i < 10; i++) {
-          const x = Math.round(i * W / 10);
-          for (let j = 0; j < 10; j++) {
-            const y = Math.round(j * H / 10);
-  
-            const imagePoint: Position = [x, y];
-            imagePoints.push(imagePoint);
-            const mapPoint = forwardAffine(params, imagePoint);
-            mapPoints.push(mapPoint);
+      it("forward and inverse", () => {
+        data.gcps.forEach(gcp => {
+          const imagePoint = gcp.image;
+          const mapPoint = gcp.map;
+          const mapPoint2 = forwardAffine(params, imagePoint);
+          const imagePoint2 = inverseAffine(params, mapPoint);
 
-            const imagePoint2 = inverseAffine(params, mapPoint);
-          
-            expect(imagePoint2[0]).toBeCloseTo(imagePoint[0]);
-            expect(imagePoint2[1]).toBeCloseTo(imagePoint[1]);
-          }
-        }
+          expect(imagePoint2[0]).toBeCloseTo(imagePoint[0]);
+          expect(imagePoint2[1]).toBeCloseTo(imagePoint[1]);
+          expect(mapPoint2[0]).toBeCloseTo(mapPoint[0]);
+          expect(mapPoint2[1]).toBeCloseTo(mapPoint[1]);
+        }); 
       });
+
+      const imagePoints = data.gcps.map(gcp => gcp.image);
+      const mapPoints = data.gcps.map(gcp => gcp.map);
+      const lnglatPoints = data.gcps.map(gcp => gcp.lnglat);
 
       it("computeAffineParams (Affine)", () => {
         const computedParams = computeTransformParams(imagePoints, mapPoints);
@@ -61,6 +69,14 @@ describe("Bidirectional affine transform ", () => {
           });
         }
       }
+
+      it ("Assume CRS", () => {
+        const crses = data.crs_candidates;
+        crses.push(data.crs);
+        const bestCRS = findBestCRS(lnglatPoints, imagePoints, crses);
+        expect(bestCRS).toBe(data.crs);
+      });
+
     });
-  }
+  });
 })
