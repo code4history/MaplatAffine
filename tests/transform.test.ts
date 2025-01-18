@@ -73,7 +73,7 @@ describe("Bidirectional affine transform ", () => {
       it ("Assume CRS", () => {
         const crses = data.crs_candidates;
         crses.push(data.crs);
-        const bestCRS = findBestCRS(lnglatPoints, imagePoints, crses);
+        const bestCRS = findBestCRS(lnglatPoints, imagePoints, crses, 'noshear', 'auto');
         expect(bestCRS).toBe(data.crs);
       });
 

@@ -1,9 +1,9 @@
 import proj4 from 'proj4';
 import * as proj4List from 'proj4-list';
 import { Position } from "geojson";
-import { computeRMSEOverStdRatio } from './rmse_ratio';
+import { computeRMSE } from './rmse';
 import { forwardAffine } from './transform';
-import { computeTransformParams } from './compute';
+import { computeTransformParams, TransformMode, YAxisMode } from './compute';
 
 /**
  * 画像の座標 (imagePoints) と対応する WGS84の経緯度 (lnglatPoints)、
@@ -13,7 +13,9 @@ import { computeTransformParams } from './compute';
 export function findBestCRS(
   lnglatPoints: Position[],  // WGS84の経緯度
   imagePoints: Position[],   // 画像座標(ピクセル座標など)
-  crses: string[]            // 候補となるCRS(EPSGコードやproj4のIDなど)
+  crses: string[],           // 候補となるCRS(EPSGコードやproj4のIDなど)
+  mode: TransformMode = 'affine',
+  yAxisMode: YAxisMode = 'auto'
 ): string {
   // 画像座標と経緯度の対応点数が一致していなければエラー
   if (lnglatPoints.length !== imagePoints.length) {
@@ -21,10 +23,10 @@ export function findBestCRS(
   }
 
   // 中間結果を保存するオブジェクト
-  const mapPoints: { [key: string]: Position[] } = {};   // 各CRSで投影した結果(地図座標)を保持
-  const affineParams: { [key: string]: any } = {};       // 各CRSごとのアフィンパラメータ
+  const mapPoints: { [key: string]: Position[] } = {};        // 各CRSで投影した結果(地図座標)を保持
+  const affineParams: { [key: string]: any } = {};            // 各CRSごとのアフィンパラメータ
   const assumedMapPoints: { [key: string]: Position[] } = {}; // アフィンで再投影した座標(予測座標)
-  const ratio: { [key: string]: number } = {};           // 最終的なRMSE/標準偏差の値(あるいは別指標)
+  const rmse: { [key: string]: number } = {};                 // 最終的なRMSEの値(あるいは別指標)
 
   for (const crs of crses) {
     // 1) proj4.defs(crs) が未登録なら、proj4-list経由で定義を追加
@@ -39,7 +41,7 @@ export function findBestCRS(
 
     // 3) 画像座標(imagePoints) と 得られた地図座標(mapPoints[crs]) から
     //    アフィンパラメータを推定
-    affineParams[crs] = computeTransformParams(imagePoints, mapPoints[crs]);
+    affineParams[crs] = computeTransformParams(imagePoints, mapPoints[crs], mode, yAxisMode);
 
     // 4) 画像座標をアフィン変換してみる → 地図座標がどう予測されるか
     assumedMapPoints[crs] = imagePoints.map(point => {
@@ -47,10 +49,10 @@ export function findBestCRS(
     });
 
     // 5) 実際の地図座標(mapPoints[crs]) と、アフィン変換で求めた地図座標(assumedMapPoints[crs]) の
-    //    RMSE / 観測標準偏差 を計算して ratio[crs] に格納
-    ratio[crs] = computeRMSEOverStdRatio(mapPoints[crs], assumedMapPoints[crs]);
+    //    RMSEを計算して rmse[crs] に格納
+    rmse[crs] = computeRMSE(mapPoints[crs], assumedMapPoints[crs]);
   }
 
   // 6) ratioが最小になるCRSを返す
-  return Object.keys(ratio).reduce((a, b) => (ratio[a] < ratio[b] ? a : b));
+  return Object.keys(rmse).reduce((a, b) => (rmse[a] < rmse[b] ? a : b));
 }
