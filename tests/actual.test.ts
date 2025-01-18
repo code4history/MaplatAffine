@@ -28,6 +28,6 @@ describe("Actual assume", () => {
     });
     const assumed = findBestCRS(lnglatPoints, imagePoints, candidates, 'affine', 'auto');
 
-    expect(assumed).toBe("EPSG:3099");
+    expect(assumed.crs).toBe("EPSG:3099");
   });
 });

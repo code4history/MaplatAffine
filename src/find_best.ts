@@ -4,6 +4,12 @@ import { Position } from "geojson";
 import { computeRMSE } from './rmse';
 import { forwardAffine } from './transform';
 import { computeTransformParams, TransformMode, YAxisMode } from './compute';
+import { AffineParams } from './interface';
+
+export type CRSResult = {
+  crs: string,
+  affineParams: AffineParams
+};
 
 /**
  * 画像の座標 (imagePoints) と対応する WGS84の経緯度 (lnglatPoints)、
@@ -16,7 +22,7 @@ export function findBestCRS(
   crses: string[],           // 候補となるCRS(EPSGコードやproj4のIDなど)
   mode: TransformMode = 'affine',
   yAxisMode: YAxisMode = 'auto'
-): string {
+): CRSResult {
   // 画像座標と経緯度の対応点数が一致していなければエラー
   if (lnglatPoints.length !== imagePoints.length) {
     throw new Error('The number of lnglatPoints and imagePoints must be the same.');
@@ -53,6 +59,11 @@ export function findBestCRS(
     rmse[crs] = computeRMSE(mapPoints[crs], assumedMapPoints[crs]);
   }
 
-  // 6) ratioが最小になるCRSを返す
-  return Object.keys(rmse).reduce((a, b) => (rmse[a] < rmse[b] ? a : b));
+  // 6) rmseが最小になるCRSを返す
+  const crs = Object.keys(rmse).reduce((a, b) => (rmse[a] < rmse[b] ? a : b));
+
+  return {
+    crs,
+    affineParams: affineParams[crs]
+  };
 }
