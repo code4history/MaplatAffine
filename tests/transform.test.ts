@@ -1,10 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { AffineParams } from "@/interface";
 import { Position } from "geojson";
-import { forwardAffine, inverseAffine } from "../src/transform";
-import { computeTransformParams } from '../src/compute';
+import { forwardAffine, inverseAffine } from "@/.";
+import { computeTransformParams } from '@/compute';
 import fs from "node:fs";
-import { findBestCRS } from "@/find_best";
+import { findBestCRS } from "@/find_crs";
 
 type TestData = {
   name:string,
@@ -54,7 +54,7 @@ describe("Bidirectional affine transform ", () => {
 
       if (Math.abs(params[0]) == Math.abs(params[4])) {
         it("computeAffineParams (Similar)", () => {
-          const computedParams = computeTransformParams(imagePoints, mapPoints, 'similar');
+          const computedParams = computeTransformParams(imagePoints, mapPoints);
           for (let i = 0; i < 6; i++) {
             expect(computedParams[i]).toBeCloseTo(params[i]);
           }
@@ -62,7 +62,7 @@ describe("Bidirectional affine transform ", () => {
 
         if (params[1] == 0 && params[3] == 0) {
           it("computeAffineParams (No Shear)", () => {
-            const computedParams = computeTransformParams(imagePoints, mapPoints, 'noshear');
+            const computedParams = computeTransformParams(imagePoints, mapPoints);
             for (let i = 0; i < 6; i++) {
               expect(computedParams[i]).toBeCloseTo(params[i]);
             }
@@ -73,7 +73,7 @@ describe("Bidirectional affine transform ", () => {
       it ("Assume CRS", () => {
         const crses = data.crs_candidates;
         crses.push(data.crs);
-        const bestCRS = findBestCRS(lnglatPoints, imagePoints, crses, 'noshear', 'auto');
+        const bestCRS = findBestCRS(lnglatPoints, imagePoints, crses);
         expect(bestCRS.crs).toBe(data.crs);
       });
 

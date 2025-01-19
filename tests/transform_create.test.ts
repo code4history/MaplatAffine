@@ -1,11 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { AffineParams } from "@/interface";
 import { Position } from "geojson";
-import { forwardAffine, inverseAffine } from "../src/transform";
-import { computeTransformParams } from '../src/compute';
+import { forwardAffine, inverseAffine } from "@/.";
 import proj4 from 'proj4';
 import * as proj4List from 'proj4-list';
-import { findBestCRS } from "@/find_best";
 
 proj4.defs((proj4List as any)["EPSG:2448"][0], (proj4List as any)["EPSG:2448"][1]);
 proj4.defs((proj4List as any)["EPSG:4326"]);

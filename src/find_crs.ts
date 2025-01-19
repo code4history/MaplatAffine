@@ -2,7 +2,7 @@ import proj4 from 'proj4';
 import * as proj4List from 'proj4-list';
 import { Position } from "geojson";
 import { computeRMSE } from './rmse';
-import { forwardAffine } from './transform';
+import { forwardAffine } from '.';
 import { computeTransformParams, TransformMode, YAxisMode } from './compute';
 import { AffineParams } from './interface';
 

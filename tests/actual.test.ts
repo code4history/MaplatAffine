@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import proj4 from 'proj4';
 import * as proj4List from 'proj4-list';
-import { findBestCRS } from "@/find_best";
+import { findBestCRS } from "@/find_crs";
 
 const actualExample = [
   [[2189.00215528863, 2742.4019756531598], [135.53918377940292,34.67214118322921]],
